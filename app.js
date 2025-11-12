@@ -1,6 +1,6 @@
-const CANVAS_WIDTH = 640;
-const CANVAS_HEIGHT = 480;
-const FRAME_RATE = 24;
+const CANVAS_WIDTH = 1280;
+const CANVAS_HEIGHT = 720;
+const FRAME_RATE = 60;
 
 
 async function getWebCamStream() {
@@ -32,6 +32,11 @@ function initShaderProgram(gl, vsSource, fsSource) {
     gl.attachShader(shaderProgram, fragmentShader);
     gl.linkProgram(shaderProgram);
 
+    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+        console.error("Program link error:", gl.getProgramInfoLog(shaderProgram));
+        return null;
+    }
+
     return shaderProgram;
 }
 
@@ -41,6 +46,12 @@ function loadShader(gl, type, source) {
     gl.shaderSource(shader, source);
 
     gl.compileShader(shader);
+
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error("Shader compile error:", gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+    }
 
     return shader;
 }
@@ -99,6 +110,11 @@ function drawScene(gl, programInfo, stream) {
 
         gl.useProgram(programInfo.program);
 
+        
+        const uResolution = gl.getUniformLocation(programInfo.program, "uResolution");
+        gl.uniform2f(uResolution, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
         const vertPosLoc = programInfo.attribLocations.vertexPosition
         gl.vertexAttribPointer(
@@ -124,7 +140,7 @@ function drawScene(gl, programInfo, stream) {
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
 
-        
+
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
 
@@ -143,23 +159,23 @@ async function main() {
     canvas.width = CANVAS_WIDTH;
     canvas.height = CANVAS_HEIGHT;
 
-    const gl = canvas.getContext("webgl");
+    const gl = canvas.getContext("webgl2");
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     const stream = await getWebCamStream();
 
-    const vsSource = `
-    attribute vec4 aVertexPosition;
-    attribute vec2 aTextureCoord;
+    const vsSource = `#version 300 es
+    in vec4 aVertexPosition;
+    in vec2 aTextureCoord;
 
     uniform mat4 uModelViewMatrix;
     uniform mat4 uProjectionMatrix;
 
-    varying highp vec2 vTexCoord;
+    out vec2 vTexCoord;
 
-    void main(void) {
+    void main() {
         gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
         vTexCoord = aTextureCoord;
     }
@@ -167,33 +183,66 @@ async function main() {
 
 `;
 
-    const fsSource = `
+    const fsSource = `#version 300 es
     precision mediump float;
-    varying highp vec2 vTexCoord;
+
+    in vec2 vTexCoord;
     uniform sampler2D uSampler;
+    uniform vec2 uResolution;
 
-    void main(void) {
-        vec4 color = texture2D(uSampler, vTexCoord);
-        float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-        gl_FragColor = vec4(vec3(gray), 1.0);
+    out vec4 fragColor;
+
+    const vec2 offsets[9] = vec2[](
+        vec2(-1.0, -1.0), vec2( 0.0, -1.0), vec2( 1.0, -1.0),
+        vec2(-1.0,  0.0), vec2( 0.0,  0.0), vec2( 1.0,  0.0),
+        vec2(-1.0,  1.0), vec2( 0.0,  1.0), vec2( 1.0,  1.0)
+    );
+
+    // Sobel kernel X
+    const float gx[9] = float[](
+        -1.0,  0.0,  1.0,
+        -2.0,  0.0,  2.0,
+        -1.0,  0.0,  1.0
+        );
+        
+    // Sobel kernel Y
+    const float gy[9] = float[](
+        -1.0, -2.0, -1.0,
+        0.0,  0.0,  0.0,
+        1.0,  2.0,  1.0
+    );
+
+    void main() {
+        vec2 texelSize = 1.0 / uResolution;
+        float sx = 0.0;
+        float sy = 0.0;
+
+        for (int i = 0; i < 9; i++) {
+            vec2 samplePos = vTexCoord + offsets[i] * texelSize;
+            float intensity = texture(uSampler, samplePos).r;
+            sx += gx[i] * intensity;
+            sy += gy[i] * intensity;
+        }
+
+        float edge = length(vec2(sx, sy));
+        fragColor = vec4(vec3(edge), 1.0);
     }
-
 `;
 
     const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
 
     const programInfo = {
-    program: shaderProgram,
-    attribLocations: {
-        vertexPosition: gl.getAttribLocation(shaderProgram, "aVertexPosition"),
-        textureCoord: gl.getAttribLocation(shaderProgram, "aTextureCoord"),
-    },
-    uniformLocations: {
-        projectionMatrix: gl.getUniformLocation(shaderProgram, "uProjectionMatrix"),
-        modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix"),
-        uSampler: gl.getUniformLocation(shaderProgram, "uSampler"),
-    },
-};
+        program: shaderProgram,
+        attribLocations: {
+            vertexPosition: gl.getAttribLocation(shaderProgram, "aVertexPosition"),
+            textureCoord: gl.getAttribLocation(shaderProgram, "aTextureCoord"),
+        },
+        uniformLocations: {
+            projectionMatrix: gl.getUniformLocation(shaderProgram, "uProjectionMatrix"),
+            modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix"),
+            uSampler: gl.getUniformLocation(shaderProgram, "uSampler"),
+        },
+    };
 
 
 
