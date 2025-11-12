@@ -219,7 +219,8 @@ async function main() {
 
         for (int i = 0; i < 9; i++) {
             vec2 samplePos = vTexCoord + offsets[i] * texelSize;
-            float intensity = texture(uSampler, samplePos).r;
+            vec4 color = texture(uSampler, samplePos);
+            float intensity = dot(color.rgb, vec3(0.299, 0.587, 0.114));
             sx += gx[i] * intensity;
             sy += gy[i] * intensity;
         }
