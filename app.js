@@ -250,6 +250,9 @@ async function main() {
     void main() {
         vec2 texelSize = 1.0 / uResolution;
 
+        int gaussianKernelSize = 9;
+        int halfGaussianKernelSize = (gaussianKernelSize - 1) / 2;
+
         float blurredGray[9];    
         int idx = 0;
 
@@ -263,14 +266,15 @@ async function main() {
                 int gIdx = 0; 
 
                 // Loop gaussianKernel
-                for (int j = -4; j <= 4; j++) {
-                    for (int i = -4; i <= 4; i++) {
+                for (int j = -halfGaussianKernelSize; j <= halfGaussianKernelSize; j++) {
+                    for (int i = -halfGaussianKernelSize; i <= halfGaussianKernelSize; i++) {
 
-                        vec2 offset = (vec2(float(i + sx * 4), float(j + sy * 4)) * texelSize);
+                        vec2 offset = (vec2(float(i + sx), float(j + sy)) * texelSize);
                         vec4 color = texture(uSampler, vTexCoord + offset);
                         float intensity = dot(color.rgb, vec3(0.299, 0.587, 0.114));
 
                         accum += intensity * uGaussianKernel[gIdx];
+                        // accum = intensity;
                         gIdx++;
                     }
                 }
@@ -290,7 +294,7 @@ async function main() {
 
         float edge = length(vec2(sx, sy));
 
-        // fragColor = vec4(vec3(blurredGray[4]), 1.0);
+        //fragColor = vec4(vec3(blurredGray[4]), 1.0);
         fragColor = vec4(vec3(edge), 1.0);
     }
 `;
@@ -312,12 +316,7 @@ async function main() {
     },
 };
 
-
-
-
     drawScene(gl, programInfo, stream);
-
-
 }
 
 main();
