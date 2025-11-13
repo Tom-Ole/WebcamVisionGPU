@@ -20,8 +20,6 @@ async function getWebCamStream() {
 
 }
 
-
-
 function initShaderProgram(gl, vsSource, fsSource) {
     const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
     const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
@@ -56,6 +54,35 @@ function loadShader(gl, type, source) {
     return shader;
 }
 
+function createGaussianKernel(sigma) {
+    const size = 9;
+    const halfSize = Math.floor(size / 2);
+
+    const kernel = [];
+    let sum = 0;
+
+    const sigma2 = sigma * sigma;
+    const coefficient = 1 / (2 * Math.PI * sigma2);
+
+    function gaussianFunction(i, j) {
+        const exponent = -(i * i + j * j) / (2 * sigma2);
+        return coefficient * Math.exp(exponent);
+    }
+
+    for (let j = 0; j < size; j++) {
+        const row = [];
+        for (let i = 0; i < size; i++) {
+            const ii = i - halfSize;
+            const jj = j - halfSize;
+            const value = gaussianFunction(ii, jj);
+            row.push(value);
+            sum += value;
+        }
+        kernel.push(row);
+    }
+
+    return kernel.map(row => row.map(val => val / sum));
+}
 
 function drawScene(gl, programInfo, stream) {
     const video = document.createElement("video");
@@ -99,6 +126,8 @@ function drawScene(gl, programInfo, stream) {
         0, 0, 0, 1
     ]);
 
+    const gausianKernel = createGaussianKernel(5).flat();
+
     function render() {
         if (video.readyState >= 2) {
 
@@ -113,6 +142,10 @@ function drawScene(gl, programInfo, stream) {
         
         const uResolution = gl.getUniformLocation(programInfo.program, "uResolution");
         gl.uniform2f(uResolution, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+
+        const uGaussianKernel = gl.getUniformLocation(programInfo.program, "uGaussianKernel");
+        gl.uniform1fv(uGaussianKernel, gausianKernel);
 
 
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -161,6 +194,7 @@ async function main() {
 
     const gl = canvas.getContext("webgl2");
 
+    gl.viewport(0, 0, canvas.width, canvas.height);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
@@ -176,8 +210,8 @@ async function main() {
     out vec2 vTexCoord;
 
     void main() {
-        gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
         vTexCoord = aTextureCoord;
+        gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
     }
 
 
@@ -189,6 +223,7 @@ async function main() {
     in vec2 vTexCoord;
     uniform sampler2D uSampler;
     uniform vec2 uResolution;
+    uniform float uGaussianKernel[81]; // 9x9 kernel
 
     out vec4 fragColor;
 
@@ -214,18 +249,48 @@ async function main() {
 
     void main() {
         vec2 texelSize = 1.0 / uResolution;
+
+        float blurredGray[9];    
+        int idx = 0;
+
+        // Loop sobel pos
+        for (int sy = -1; sy <= 1; sy++) {
+            for (int sx = -1; sx <= 1; sx++) {
+
+                float accum = 0.0;
+
+                //replacement for uGaussianKernel[i][j], because of strict glsl rules
+                int gIdx = 0; 
+
+                // Loop gaussianKernel
+                for (int j = -4; j <= 4; j++) {
+                    for (int i = -4; i <= 4; i++) {
+
+                        vec2 offset = (vec2(float(i + sx * 4), float(j + sy * 4)) * texelSize);
+                        vec4 color = texture(uSampler, vTexCoord + offset);
+                        float intensity = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+
+                        accum += intensity * uGaussianKernel[gIdx];
+                        gIdx++;
+                    }
+                }
+
+                blurredGray[idx] = accum;
+                idx++;
+            }
+        }
+
         float sx = 0.0;
         float sy = 0.0;
 
         for (int i = 0; i < 9; i++) {
-            vec2 samplePos = vTexCoord + offsets[i] * texelSize;
-            vec4 color = texture(uSampler, samplePos);
-            float intensity = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-            sx += gx[i] * intensity;
-            sy += gy[i] * intensity;
+            sx += gx[i] * blurredGray[i];
+            sy += gy[i] * blurredGray[i];
         }
 
         float edge = length(vec2(sx, sy));
+
+        // fragColor = vec4(vec3(blurredGray[4]), 1.0);
         fragColor = vec4(vec3(edge), 1.0);
     }
 `;
@@ -233,17 +298,19 @@ async function main() {
     const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
 
     const programInfo = {
-        program: shaderProgram,
-        attribLocations: {
-            vertexPosition: gl.getAttribLocation(shaderProgram, "aVertexPosition"),
-            textureCoord: gl.getAttribLocation(shaderProgram, "aTextureCoord"),
-        },
-        uniformLocations: {
-            projectionMatrix: gl.getUniformLocation(shaderProgram, "uProjectionMatrix"),
-            modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix"),
-            uSampler: gl.getUniformLocation(shaderProgram, "uSampler"),
-        },
-    };
+    program: shaderProgram,
+    attribLocations: {
+        vertexPosition: gl.getAttribLocation(shaderProgram, "aVertexPosition"),
+        textureCoord: gl.getAttribLocation(shaderProgram, "aTextureCoord"),
+    },
+    uniformLocations: {
+        projectionMatrix: gl.getUniformLocation(shaderProgram, "uProjectionMatrix"),
+        modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix"),
+        uSampler: gl.getUniformLocation(shaderProgram, "uSampler"),
+        uResolution: gl.getUniformLocation(shaderProgram, "uResolution"),
+        uGaussianKernel: gl.getUniformLocation(shaderProgram, "uGaussianKernel"),
+    },
+};
 
 
 
