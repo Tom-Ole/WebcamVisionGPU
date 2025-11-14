@@ -1,4 +1,4 @@
-const CANVAS_WIDTH = 1280;
+const CANVAS_WIDTH = 1240;
 const CANVAS_HEIGHT = 720;
 const FRAME_RATE = 60;
 
@@ -148,6 +148,15 @@ function drawScene(gl, programInfo, stream) {
         gl.uniform1fv(uGaussianKernel, gausianKernel);
 
 
+        const lowThresholdElement = document.getElementById("lowThreshold");
+        const highThresholdElement = document.getElementById("highThreshold");
+        const low = parseFloat(lowThresholdElement.value);
+        const high = parseFloat(highThresholdElement.value);
+
+        gl.uniform1f(programInfo.uniformLocations.uLowThreshold, low);
+        gl.uniform1f(programInfo.uniformLocations.uHighThreshold, high);
+
+
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
         const vertPosLoc = programInfo.attribLocations.vertexPosition
         gl.vertexAttribPointer(
@@ -187,6 +196,16 @@ function drawScene(gl, programInfo, stream) {
 
 async function main() {
 
+    const lowThresholdElement = document.getElementById("lowThreshold");
+    const highThresholdElement = document.getElementById("highThreshold");
+
+    lowThresholdElement.addEventListener("input",() => {
+        document.getElementById("lowThresholdLabel").innerHTML = lowThresholdElement.value;
+    })
+    highThresholdElement.addEventListener("input",() => {
+        document.getElementById("highThresholdLabel").innerHTML = highThresholdElement.value;
+    })
+
     const canvas = document.getElementById("canvas");
 
     canvas.width = CANVAS_WIDTH;
@@ -224,6 +243,9 @@ async function main() {
     uniform sampler2D uSampler;
     uniform vec2 uResolution;
     uniform float uGaussianKernel[81]; // 9x9 kernel
+
+    uniform float uLowThreshold;
+    uniform float uHighThreshold;
 
     out vec4 fragColor;
 
@@ -292,29 +314,117 @@ async function main() {
             sy += gy[i] * blurredGray[i];
         }
 
+        // Sobel magnitude and gradientAngle
+        float mag = sqrt(sx * sx + sy *sy);
+        float angle = atan(sy, sx);
+        float angleDeg = degrees(angle);
+
+
+        // NonMaxSupressed
+        if (angleDeg < 0.0) angleDeg += 180.0;
+        float mag1, mag2;
+
+        // Select neighbors based on angle
+        if (angleDeg < 22.5 || angleDeg >= 157.5) {
+            // 0° → check LEFT & RIGHT
+            mag1 = blurredGray[3]; // left
+            mag2 = blurredGray[5]; // right
+
+        } else if (angleDeg < 67.5) {
+            // 45° → check TOP-RIGHT & BOTTOM-LEFT
+            mag1 = blurredGray[2]; // top-right
+            mag2 = blurredGray[6]; // bottom-left
+
+        } else if (angleDeg < 112.5) {
+            // 90° → check TOP & BOTTOM
+            mag1 = blurredGray[1]; // top
+            mag2 = blurredGray[7]; // bottom
+
+        } else {
+            // 135° → check TOP-LEFT & BOTTOM-RIGHT
+            mag1 = blurredGray[0]; // top-left
+            mag2 = blurredGray[8]; // bottom-right
+        }
+
+        float nms = (mag >= mag1 && mag >= mag2) ? mag : 0.0;
+
+
+
+        // Double Thresholding
+        float lowThreshold = uLowThreshold;
+        float highThreshold = uHighThreshold;
+        
+        float dt;
+        if (nms <= lowThreshold) {
+            dt = 0.0;
+        } else if (nms <= highThreshold) {
+            dt = 0.5; 
+        } else {
+            dt = 1.0;
+        }
+
+
+        // hysteresis
+        float hyst = dt;
+        
+        // Weak edge
+        if (dt == 0.5) { 
+            bool strongN = false;
+
+            for (int i = 0; i < 9; i++) {
+                if (i == 4) continue; // skip center;
+
+                float ni = blurredGray[i];
+
+
+                // approximation of local magnitude of blurredGray itself
+                float neighborMag = ni;
+
+                if (neighborMag > highThreshold) {
+                    strongN = true;
+                    break;
+                }
+
+            }
+
+            if (strongN) {
+                hyst = 1.0;
+            } else {
+                hyst = 0.0;
+            }
+
+        }
+
         float edge = length(vec2(sx, sy));
 
         //fragColor = vec4(vec3(blurredGray[4]), 1.0);
-        fragColor = vec4(vec3(edge), 1.0);
+        // fragColor = vec4(vec3(edge), 1.0);
+        // fragColor = vec4(vec3(nms), 1.0);
+        // fragColor = vec4(vec3(dt), 1.0);
+        fragColor = vec4(vec3(hyst), 1.0);
     }
 `;
 
     const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
 
     const programInfo = {
-    program: shaderProgram,
-    attribLocations: {
-        vertexPosition: gl.getAttribLocation(shaderProgram, "aVertexPosition"),
-        textureCoord: gl.getAttribLocation(shaderProgram, "aTextureCoord"),
-    },
-    uniformLocations: {
-        projectionMatrix: gl.getUniformLocation(shaderProgram, "uProjectionMatrix"),
-        modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix"),
-        uSampler: gl.getUniformLocation(shaderProgram, "uSampler"),
-        uResolution: gl.getUniformLocation(shaderProgram, "uResolution"),
-        uGaussianKernel: gl.getUniformLocation(shaderProgram, "uGaussianKernel"),
-    },
-};
+        program: shaderProgram,
+        attribLocations: {
+            vertexPosition: gl.getAttribLocation(shaderProgram, "aVertexPosition"),
+            textureCoord: gl.getAttribLocation(shaderProgram, "aTextureCoord"),
+        },
+        uniformLocations: {
+            projectionMatrix: gl.getUniformLocation(shaderProgram, "uProjectionMatrix"),
+            modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix"),
+            uSampler: gl.getUniformLocation(shaderProgram, "uSampler"),
+            uResolution: gl.getUniformLocation(shaderProgram, "uResolution"),
+            uGaussianKernel: gl.getUniformLocation(shaderProgram, "uGaussianKernel"),
+            uLowThreshold: gl.getUniformLocation(shaderProgram, "uLowThreshold"),
+            uHighThreshold: gl.getUniformLocation(shaderProgram, "uHighThreshold"),
+        },
+    };
+
+
 
     drawScene(gl, programInfo, stream);
 }
