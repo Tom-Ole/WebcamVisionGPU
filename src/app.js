@@ -3,7 +3,7 @@ import { CannyPipeline } from './pipelines/CannyPipeline.js';
 import { RawPipeline } from './pipelines/RawPipeline.js';
 import { UIManager } from './ui/UIManager.js';
 
-export async function runApp({ canvasId = 'canvas', width = 1240, height = 720 }) {
+export async function run({ canvasId = 'canvas', width = 1240, height = 720 }) {
     const canvas = document.getElementById(canvasId);
     canvas.width = width;
     canvas.height = height;

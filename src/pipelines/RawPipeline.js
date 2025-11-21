@@ -1,6 +1,6 @@
 import { Pipeline } from './Pipeline.js';
 import { GPUPass } from '../core/GPUPass.js';
-import { fsFinal } from '../shaders/final.frag.js';
+import { fsRaw } from '../shaders/raw.frag.js';
 
 export class RawPipeline extends Pipeline {
     constructor(gl, width, height, positionBuffer, texCoordBuffer) {
@@ -16,7 +16,7 @@ export class RawPipeline extends Pipeline {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
-        this.passFinal = new GPUPass(gl, fsFinal);
+        this.passFinal = new GPUPass(gl, fsRaw);
     }
 
     updateVideoTexture(video) {

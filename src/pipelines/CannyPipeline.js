@@ -138,7 +138,7 @@ export class CannyPipeline extends Pipeline {
             else if (readTex === this.hA) readTex = this.hB;
             else readTex = this.hA;
 
-            writeFB = (writeFB === this.hFA) ? this.hFB : t + his.hFA;
+            writeFB = (writeFB === this.hFA) ? this.hFB : this.hFA;
         }
 
         // 5. FINAL RENDER
