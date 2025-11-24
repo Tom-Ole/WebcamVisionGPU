@@ -1,6 +1,7 @@
 import { createGaussianKernel } from './core/MathUtils.js';
 import { blurPipeline } from './pipelines/blurPipeline.js';
 import { CannyPipeline } from './pipelines/CannyPipeline.js';
+import { grayPipeline } from './pipelines/grayPipeline.js';
 import { MotionDetecPipeline } from './pipelines/MotionDetecPipeline.js';
 import { RawPipeline } from './pipelines/RawPipeline.js';
 import { SobelPipeline } from './pipelines/SobelPipeline.js';
@@ -49,6 +50,7 @@ export async function run({ canvasId = 'canvas', width = 1240, height = 720 }) {
     // Initialize Pipelines
     const kernel = createGaussianKernel(5);
     const pipelines = {
+        gray: new grayPipeline(gl, width, height, posBuf, texBuf),
         blur: new blurPipeline(gl, width, height, posBuf, texBuf, kernel),
         sobel: new SobelPipeline(gl, width, height, posBuf, texBuf, kernel),
         canny: new CannyPipeline(gl, width, height, posBuf, texBuf, kernel),
@@ -79,6 +81,7 @@ export async function run({ canvasId = 'canvas', width = 1240, height = 720 }) {
     }
 
     setMode('raw');
+    document.getElementById('grayBtn').addEventListener('click', () => setMode('gray'));
     document.getElementById('blurBtn').addEventListener('click', () => setMode('blur'));
     document.getElementById('sobelBtn').addEventListener('click', () => setMode('sobel'));
     document.getElementById('cannyBtn').addEventListener('click', () => setMode('canny'));
