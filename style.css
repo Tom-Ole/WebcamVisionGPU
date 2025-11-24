@@ -71,7 +71,8 @@ body {
 .mode-row {
     display: flex;
     gap: 8px;
-    margin-bottom: 12px
+    margin-bottom: 12px;
+    flex-wrap: wrap;
 }
 
 .mode-row button {

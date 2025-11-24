@@ -1,6 +1,9 @@
 import { createGaussianKernel } from './core/MathUtils.js';
+import { blurPipeline } from './pipelines/blurPipeline.js';
 import { CannyPipeline } from './pipelines/CannyPipeline.js';
+import { MotionDetecPipeline } from './pipelines/MotionDetecPipeline.js';
 import { RawPipeline } from './pipelines/RawPipeline.js';
+import { SobelPipeline } from './pipelines/SobelPipeline.js';
 import { UIManager } from './ui/UIManager.js';
 
 export async function run({ canvasId = 'canvas', width = 1240, height = 720 }) {
@@ -46,7 +49,10 @@ export async function run({ canvasId = 'canvas', width = 1240, height = 720 }) {
     // Initialize Pipelines
     const kernel = createGaussianKernel(5);
     const pipelines = {
+        blur: new blurPipeline(gl, width, height, posBuf, texBuf, kernel),
+        sobel: new SobelPipeline(gl, width, height, posBuf, texBuf, kernel),
         canny: new CannyPipeline(gl, width, height, posBuf, texBuf, kernel),
+        motion: new MotionDetecPipeline(gl, width, height, posBuf, texBuf),
         raw: new RawPipeline(gl, width, height, posBuf, texBuf)
     };
 
@@ -54,7 +60,7 @@ export async function run({ canvasId = 'canvas', width = 1240, height = 720 }) {
     const uiManager = new UIManager('modeSettings');
 
     // State
-    let currentMode = 'canny';
+    let currentMode = 'raw';
     let activePipeline = pipelines[currentMode];
     let raf = null;
 
@@ -72,8 +78,11 @@ export async function run({ canvasId = 'canvas', width = 1240, height = 720 }) {
         if (btn) btn.classList.add('active');
     }
 
-    setMode('canny');
+    setMode('raw');
+    document.getElementById('blurBtn').addEventListener('click', () => setMode('blur'));
+    document.getElementById('sobelBtn').addEventListener('click', () => setMode('sobel'));
     document.getElementById('cannyBtn').addEventListener('click', () => setMode('canny'));
+    document.getElementById('motionBtn').addEventListener('click', () => setMode('motion'));
     document.getElementById('rawBtn').addEventListener('click', () => setMode('raw'));
 
 
