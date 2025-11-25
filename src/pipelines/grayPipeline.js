@@ -4,7 +4,7 @@ import { GPUPass } from '../core/GPUPass.js';
 import { fsFinal } from '../shaders/final.frag.js';
 import { fsGray } from '../shaders/grayscale.frag.js';
 
-export class grayPipeline extends Pipeline {
+export class GrayPipeline extends Pipeline {
     constructor(gl, width, height, positionBuffer, texCoordBuffer) {
         super(gl, width, height);
         this.posBuf = positionBuffer;

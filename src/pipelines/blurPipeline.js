@@ -4,7 +4,7 @@ import { GPUPass } from '../core/GPUPass.js';
 import { fsBlur } from '../shaders/blur.frag.js';
 import { fsFinal } from '../shaders/final.frag.js';
 
-export class blurPipeline extends Pipeline {
+export class BlurPipeline extends Pipeline {
     constructor(gl, width, height, positionBuffer, texCoordBuffer, gaussianKernel) {
         super(gl, width, height);
         this.posBuf = positionBuffer;

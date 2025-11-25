@@ -1,7 +1,7 @@
 import { createGaussianKernel } from './core/MathUtils.js';
-import { blurPipeline } from './pipelines/blurPipeline.js';
+import { BlurPipeline } from './pipelines/BlurPipeline.js';
 import { CannyPipeline } from './pipelines/CannyPipeline.js';
-import { grayPipeline } from './pipelines/grayPipeline.js';
+import { GrayPipeline } from './pipelines/GrayPipeline.js';
 import { MotionDetecPipeline } from './pipelines/MotionDetecPipeline.js';
 import { RawPipeline } from './pipelines/RawPipeline.js';
 import { SepiaPipeline } from './pipelines/sepiaPipeline.js';
@@ -51,8 +51,8 @@ export async function run({ canvasId = 'canvas', width = 1240, height = 720 }) {
     // Initialize Pipelines
     const kernel = createGaussianKernel(5);
     const pipelines = {
-        gray: new grayPipeline(gl, width, height, posBuf, texBuf),
-        blur: new blurPipeline(gl, width, height, posBuf, texBuf, kernel),
+        gray: new GrayPipeline(gl, width, height, posBuf, texBuf),
+        blur: new BlurPipeline(gl, width, height, posBuf, texBuf, kernel),
         sobel: new SobelPipeline(gl, width, height, posBuf, texBuf, kernel),
         canny: new CannyPipeline(gl, width, height, posBuf, texBuf, kernel),
         motion: new MotionDetecPipeline(gl, width, height, posBuf, texBuf),
