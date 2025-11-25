@@ -14,7 +14,7 @@ A CPU implementation of the first Algorithms are found in my other repository: [
 - [x] Gaussian Blur
 - [ ] Median Filter
 - [x] Sepia Tone Filter
-- [ ] Invert Colors
+- [x] Invert Colors
 - [x] Sobel Edge Detection
 - [x] Canny Edge Detection
 - [x] Motion Detection
