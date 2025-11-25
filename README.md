@@ -13,7 +13,7 @@ A CPU implementation of the first Algorithms are found in my other repository: [
 - [x] Grayscale Conversion
 - [x] Gaussian Blur
 - [ ] Median Filter
-- [ ] Sepia Tone Filter
+- [x] Sepia Tone Filter
 - [ ] Invert Colors
 - [x] Sobel Edge Detection
 - [x] Canny Edge Detection

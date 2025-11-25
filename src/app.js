@@ -4,6 +4,7 @@ import { CannyPipeline } from './pipelines/CannyPipeline.js';
 import { grayPipeline } from './pipelines/grayPipeline.js';
 import { MotionDetecPipeline } from './pipelines/MotionDetecPipeline.js';
 import { RawPipeline } from './pipelines/RawPipeline.js';
+import { SepiaPipeline } from './pipelines/sepiaPipeline.js';
 import { SobelPipeline } from './pipelines/SobelPipeline.js';
 import { UIManager } from './ui/UIManager.js';
 
@@ -55,6 +56,7 @@ export async function run({ canvasId = 'canvas', width = 1240, height = 720 }) {
         sobel: new SobelPipeline(gl, width, height, posBuf, texBuf, kernel),
         canny: new CannyPipeline(gl, width, height, posBuf, texBuf, kernel),
         motion: new MotionDetecPipeline(gl, width, height, posBuf, texBuf),
+        sepia: new SepiaPipeline(gl, width, height, posBuf, texBuf),
         raw: new RawPipeline(gl, width, height, posBuf, texBuf)
     };
 
@@ -86,6 +88,7 @@ export async function run({ canvasId = 'canvas', width = 1240, height = 720 }) {
     document.getElementById('sobelBtn').addEventListener('click', () => setMode('sobel'));
     document.getElementById('cannyBtn').addEventListener('click', () => setMode('canny'));
     document.getElementById('motionBtn').addEventListener('click', () => setMode('motion'));
+    document.getElementById('sepiaBtn').addEventListener('click', () => setMode('sepia'));
     document.getElementById('rawBtn').addEventListener('click', () => setMode('raw'));
 
 
