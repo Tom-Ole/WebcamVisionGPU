@@ -12,7 +12,7 @@ A CPU implementation of the first Algorithms are found in my other repository: [
 # Ideas Computer Vision / Image Processing Effects to Implement:
 - [x] Grayscale Conversion
 - [x] Gaussian Blur
-- [ ] Median Filter
+- [x] Median Filter
 - [x] Sepia Tone Filter
 - [x] Invert Colors
 - [x] Sobel Edge Detection
