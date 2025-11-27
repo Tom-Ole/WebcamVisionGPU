@@ -3,6 +3,7 @@ import { BlurPipeline } from './pipelines/BlurPipeline.js';
 import { CannyPipeline } from './pipelines/CannyPipeline.js';
 import { GrayPipeline } from './pipelines/GrayPipeline.js';
 import { InvertPipeline } from './pipelines/InvertPipeline.js';
+import { MedianPipeline } from './pipelines/MedianPipieline.js';
 import { MotionDetecPipeline } from './pipelines/MotionDetecPipeline.js';
 import { RawPipeline } from './pipelines/RawPipeline.js';
 import { SepiaPipeline } from './pipelines/sepiaPipeline.js';
@@ -59,6 +60,7 @@ export async function run({ canvasId = 'canvas', width = 1240, height = 720 }) {
         motion: new MotionDetecPipeline(gl, width, height, posBuf, texBuf),
         sepia: new SepiaPipeline(gl, width, height, posBuf, texBuf),
         invert: new InvertPipeline(gl, width, height, posBuf, texBuf),
+        median: new MedianPipeline(gl, width, height, posBuf, texBuf),
         raw: new RawPipeline(gl, width, height, posBuf, texBuf)
     };
 
@@ -92,6 +94,7 @@ export async function run({ canvasId = 'canvas', width = 1240, height = 720 }) {
     document.getElementById('motionBtn').addEventListener('click', () => setMode('motion'));
     document.getElementById('sepiaBtn').addEventListener('click', () => setMode('sepia'));
     document.getElementById('invertBtn').addEventListener('click', () => setMode('invert'));
+    document.getElementById('medianBtn').addEventListener('click', () => setMode('median'));
     document.getElementById('rawBtn').addEventListener('click', () => setMode('raw'));
 
 
