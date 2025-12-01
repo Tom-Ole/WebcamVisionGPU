@@ -21,7 +21,7 @@ A CPU implementation of the first Algorithms are found in my other repository: [
 - [ ] Background Subtraction
 - [ ] Optical Flow (Lucas–Kanade or Horn–Schunck Lite)
 - [ ] Hough Transform (for Lines or Circles)
-- [ ] Corner Detectors (Harris / Shi–Tomasi)
+- [x] Corner Detectors (Harris / Shi–Tomasi)
 - [ ] Depth from Motion (Structure from Motion Lite)
 - [ ] Cartoon / Pencil Drawing Filter
 - [ ] Kuwahara / Oil Painting Filter

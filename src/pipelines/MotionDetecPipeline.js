@@ -2,8 +2,8 @@ import { Pipeline } from './Pipeline.js';
 import { createTexture, createFramebuffer } from '../core/WebGLUtils.js';
 import { GPUPass } from '../core/GPUPass.js';
 import { fsGray } from '../shaders/grayscale.frag.js';
-import { fsMotionOverlay } from '../shaders/motionOverlay.frag.js';
 import { fsMotion } from '../shaders/motion.frag.js';
+import { fsMotionOverlay } from '../shaders/overlay.frag.js';
 
 export class MotionDetecPipeline extends Pipeline {
     constructor(gl, width, height, positionBuffer, texCoordBuffer) {
@@ -133,6 +133,7 @@ export class MotionDetecPipeline extends Pipeline {
         gl.viewport(0, 0, w, h);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         this.passFinal.bindQuad(this.posBuf, this.texBuf);
+
         this.passFinal.use();
 
         gl.activeTexture(gl.TEXTURE0);
@@ -141,7 +142,7 @@ export class MotionDetecPipeline extends Pipeline {
 
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, motionTexCurrent);
-        gl.uniform1i(this.passFinal.getUniform('uMotion'), 1);
+        gl.uniform1i(this.passFinal.getUniform('uOverlay'), 1);
 
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }

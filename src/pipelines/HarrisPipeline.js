@@ -3,9 +3,9 @@ import { createTexture, createFramebuffer } from '../core/WebGLUtils.js';
 import { GPUPass } from '../core/GPUPass.js';
 import { fsBlur, fsTensorBlur } from '../shaders/blur.frag.js';
 import { fsNMS } from '../shaders/nms.frag.js';
-import { fsFinal } from '../shaders/final.frag.js';
-import { fsHarris, fsOverlay, fsStructureTensor } from '../shaders/harris.frag.js';
+import { fsHarris, fsStructureTensor } from '../shaders/harris.frag.js';
 import { fsSobel } from '../shaders/sobel.frag.js';
+import { fsOverlay } from '../shaders/overlay.frag.js';
 
 export class HarrisPipeline extends Pipeline {
     constructor(gl, width, height, positionBuffer, texCoordBuffer, gaussianKernel) {
