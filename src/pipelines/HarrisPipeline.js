@@ -1,13 +1,13 @@
 import { Pipeline } from './Pipeline.js';
 import { createTexture, createFramebuffer } from '../core/WebGLUtils.js';
 import { GPUPass } from '../core/GPUPass.js';
-import { fsBlur } from '../shaders/blur.frag.js';
-import { fsSobel } from '../shaders/sobel.frag.js';
+import { fsBlur, fsTensorBlur } from '../shaders/blur.frag.js';
 import { fsNMS } from '../shaders/nms.frag.js';
-import { fsHyst } from '../shaders/hyst.frag.js';
 import { fsFinal } from '../shaders/final.frag.js';
+import { fsHarris, fsStructureTensor } from '../shaders/harris.frag.js';
+import { fsSobel } from '../shaders/sobel.frag.js';
 
-export class CannyPipeline extends Pipeline {
+export class HarrisPipeline extends Pipeline {
     constructor(gl, width, height, positionBuffer, texCoordBuffer, gaussianKernel) {
         super(gl, width, height);
         this.posBuf = positionBuffer;
@@ -44,23 +44,27 @@ export class CannyPipeline extends Pipeline {
         // Intermediate Textures & FBOs
         this.blurTex = createTexture(gl, w, h);
         this.blurFB = createFramebuffer(gl, this.blurTex);
-        this.sobelTex = createTexture(gl, w, h);
+        this.tensorBlurTex = createTexture(gl, w, h);
+        this.tensorBlurFB = createFramebuffer(gl, this.tensorBlurTex);
+        this.sobelTex = createTexture(gl, w, h, gl.RGBA32F, gl.RGBA, gl.FLOAT);
         this.sobelFB = createFramebuffer(gl, this.sobelTex);
+        this.structureTensorTex = createTexture(gl, w, h, gl.RGBA32F, gl.RGBA, gl.FLOAT);
+        this.structureTensorFB = createFramebuffer(gl, this.structureTensorTex);
+        this.harrisTex = createTexture(gl, w, h);
+        this.harrisFB = createFramebuffer(gl, this.harrisTex);
         this.nmsTex = createTexture(gl, w, h);
         this.nmsFB = createFramebuffer(gl, this.nmsTex);
-        this.hA = createTexture(gl, w, h);
-        this.hFA = createFramebuffer(gl, this.hA);
-        this.hB = createTexture(gl, w, h);
-        this.hFB = createFramebuffer(gl, this.hB);
     }
 
     // Initialize Passes
     initPasses() {
         const gl = this.gl;
         this.passBlur = new GPUPass(gl, fsBlur);
+        this.passTensorBlur = new GPUPass(gl, fsTensorBlur);
         this.passSobel = new GPUPass(gl, fsSobel);
+        this.passStructureTensor = new GPUPass(gl, fsStructureTensor);
+        this.passHarris = new GPUPass(gl, fsHarris);
         this.passNMS = new GPUPass(gl, fsNMS);
-        this.passHyst = new GPUPass(gl, fsHyst);
         this.passFinal = new GPUPass(gl, fsFinal);
     }
 
@@ -89,7 +93,7 @@ export class CannyPipeline extends Pipeline {
         const w = this.width;
         const h = this.height;
 
-        // 1. BLUR
+        // BLUR
         this.passBlur.bindQuad(this.posBuf, this.texBuf);
         this.passBlur.drawTo(this.blurFB, w, h, () => {
             gl.activeTexture(gl.TEXTURE0);
@@ -99,7 +103,7 @@ export class CannyPipeline extends Pipeline {
             gl.uniform1fv(this.passBlur.getUniform('uKernel'), this.kernel);
         });
 
-        // 2. SOBEL
+        // Sobel
         this.passSobel.bindQuad(this.posBuf, this.texBuf);
         this.passSobel.drawTo(this.sobelFB, w, h, () => {
             gl.activeTexture(gl.TEXTURE0);
@@ -108,46 +112,53 @@ export class CannyPipeline extends Pipeline {
             gl.uniform2f(this.passSobel.getUniform('uResolution'), w, h);
         });
 
-        // 3. NMS
+        // Structure Tensor
+        this.passStructureTensor.bindQuad(this.posBuf, this.texBuf);
+        this.passStructureTensor.drawTo(this.structureTensorFB, w, h, () => {
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, this.sobelTex);
+            gl.uniform1i(this.passStructureTensor.getUniform('uSampler'), 0);
+            gl.uniform2f(this.passStructureTensor.getUniform('uResolution'), w, h);
+        });
+
+        // tensor Blur
+        this.passTensorBlur.bindQuad(this.posBuf, this.texBuf);
+        this.passTensorBlur.drawTo(this.tensorBlurFB, w, h, () => {
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, this.structureTensorTex);
+            gl.uniform1i(this.passTensorBlur.getUniform('uSampler'), 0);
+            gl.uniform2f(this.passTensorBlur.getUniform('uResolution'), w, h);
+            gl.uniform1fv(this.passTensorBlur.getUniform('uKernel'), this.kernel);
+        });
+
+        // Harris
+        this.passHarris.bindQuad(this.posBuf, this.texBuf);
+        this.passHarris.drawTo(this.harrisFB, w, h, () => {
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, this.tensorBlurTex);
+            gl.uniform1i(this.passHarris.getUniform('uSampler'), 0);
+            gl.uniform2f(this.passHarris.getUniform('uResolution'), w, h);
+        });
+
+        // NMS
         this.passNMS.bindQuad(this.posBuf, this.texBuf);
         this.passNMS.drawTo(this.nmsFB, w, h, () => {
             gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_2D, this.sobelTex);
+            gl.bindTexture(gl.TEXTURE_2D, this.harrisTex);
             gl.uniform1i(this.passNMS.getUniform('uInput'), 0);
             gl.uniform2f(this.passNMS.getUniform('uResolution'), w, h);
             gl.uniform1f(this.passNMS.getUniform('uLow'), this.thresholds.low);
             gl.uniform1f(this.passNMS.getUniform('uHigh'), this.thresholds.high);
         });
 
-        // 4. HYSTERESIS
-        let readTex = this.nmsTex;
-        let writeFB = this.hFA;
-        const ITER = 6;
 
-        for (let i = 0; i < ITER; i++) {
-            this.passHyst.bindQuad(this.posBuf, this.texBuf);
-            this.passHyst.drawTo(writeFB, w, h, () => {
-                gl.activeTexture(gl.TEXTURE0);
-                gl.bindTexture(gl.TEXTURE_2D, readTex);
-                gl.uniform1i(this.passHyst.getUniform('uInput'), 0);
-                gl.uniform2f(this.passHyst.getUniform('uResolution'), w, h);
-            });
-
-            // Swap buffers
-            if (readTex === this.nmsTex) readTex = this.hA;
-            else if (readTex === this.hA) readTex = this.hB;
-            else readTex = this.hA;
-
-            writeFB = (writeFB === this.hFA) ? this.hFB : this.hFA;
-        }
-
-        // 5. FINAL RENDER
+        // FINAL RENDER
         gl.viewport(0, 0, w, h);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         this.passFinal.bindQuad(this.posBuf, this.texBuf);
         this.passFinal.use();
         gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, readTex);
+        gl.bindTexture(gl.TEXTURE_2D, this.nmsTex);
         gl.uniform1i(this.passFinal.getUniform('uInput'), 0);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }

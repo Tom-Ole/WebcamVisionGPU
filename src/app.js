@@ -2,6 +2,7 @@ import { createGaussianKernel } from './core/MathUtils.js';
 import { BlurPipeline } from './pipelines/BlurPipeline.js';
 import { CannyPipeline } from './pipelines/CannyPipeline.js';
 import { GrayPipeline } from './pipelines/GrayPipeline.js';
+import { HarrisPipeline } from './pipelines/HarrisPipeline.js';
 import { InvertPipeline } from './pipelines/InvertPipeline.js';
 import { MedianPipeline } from './pipelines/MedianPipieline.js';
 import { MotionDetecPipeline } from './pipelines/MotionDetecPipeline.js';
@@ -21,9 +22,15 @@ export async function run({ canvasId = 'canvas', width = 1240, height = 720 }) {
         return;
     }
 
+    const ext = gl.getExtension('EXT_color_buffer_float');
+    if (!ext) {
+    console.error('EXT_color_buffer_float is not supported');
+    }
+
     gl.viewport(0, 0, width, height);
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
+
 
     // Quad Buffers (Shared)
     const positions = new Float32Array([-1, 1, 1, 1, -1, -1, 1, -1]);
@@ -61,6 +68,7 @@ export async function run({ canvasId = 'canvas', width = 1240, height = 720 }) {
         sepia: new SepiaPipeline(gl, width, height, posBuf, texBuf),
         invert: new InvertPipeline(gl, width, height, posBuf, texBuf),
         median: new MedianPipeline(gl, width, height, posBuf, texBuf),
+        harris: new HarrisPipeline(gl, width, height, posBuf, texBuf, kernel),
         raw: new RawPipeline(gl, width, height, posBuf, texBuf)
     };
 
@@ -95,6 +103,7 @@ export async function run({ canvasId = 'canvas', width = 1240, height = 720 }) {
     document.getElementById('sepiaBtn').addEventListener('click', () => setMode('sepia'));
     document.getElementById('invertBtn').addEventListener('click', () => setMode('invert'));
     document.getElementById('medianBtn').addEventListener('click', () => setMode('median'));
+    document.getElementById('harrisBtn').addEventListener('click', () => setMode('harris'));
     document.getElementById('rawBtn').addEventListener('click', () => setMode('raw'));
 
 

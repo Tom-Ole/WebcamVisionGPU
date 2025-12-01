@@ -1,16 +1,18 @@
-
 /**
  * Creates a texture with the specified width and height.
  * @param {WebGL2RenderingContext} gl 
  * @param {number} w - Width
  * @param {number} h - Height
+ * @param {number} internalFormat - Internal format (default: gl.RGBA)
+ * @param {number} format - Texture format (default: gl.RGBA)
+ * @param {number} type - Texture type (default: gl.UNSIGNED_BYTE)
  * @param {number} filter - Texture filter (default: gl.LINEAR)
  * @returns {WebGLTexture}
  */
-export function createTexture(gl, w, h, filter = gl.LINEAR) {
+export function createTexture(gl, w, h, internalFormat = gl.RGBA, format = gl.RGBA, type = gl.UNSIGNED_BYTE, filter = gl.LINEAR) {
     const tex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, w, h, 0, format, type, null);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -28,7 +30,14 @@ export function createFramebuffer(gl, texture) {
     const fb = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+    
+    const fbStatus = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+    if (fbStatus !== gl.FRAMEBUFFER_COMPLETE) {
+        console.error('Framebuffer incomplete:', fbStatus);
+    }
+    
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
     return fb;
 }
 

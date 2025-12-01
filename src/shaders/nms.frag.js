@@ -1,7 +1,7 @@
 export const fsNMS = `#version 300 es
 precision mediump float;
 in vec2 vTexCoord;
-uniform sampler2D uSobel;
+uniform sampler2D uInput;
 uniform vec2 uResolution;
 uniform float uLow;
 uniform float uHigh;
@@ -9,7 +9,7 @@ out vec4 fragColor;
 
 void main(){ 
     vec2 t = 1.0/uResolution;
-    vec4 c = texture(uSobel, vTexCoord);
+    vec4 c = texture(uInput, vTexCoord);
     float mag = c.r;
     float ang = c.g;
     if(ang<0.0) ang+=180.0;
@@ -17,17 +17,17 @@ void main(){
     float m2=0.0;
 
     if(ang<22.5 || ang>=157.5) {
-        m1 = texture(uSobel, vTexCoord + vec2(-t.x,0)).r;
-        m2 = texture(uSobel, vTexCoord + vec2(t.x,0)).r; 
+        m1 = texture(uInput, vTexCoord + vec2(-t.x,0)).r;
+        m2 = texture(uInput, vTexCoord + vec2(t.x,0)).r; 
     } else if(ang<67.5) {
-        m1 = texture(uSobel, vTexCoord + vec2(t.x,-t.y)).r;
-        m2 = texture(uSobel, vTexCoord + vec2(-t.x,t.y)).r; 
+        m1 = texture(uInput, vTexCoord + vec2(t.x,-t.y)).r;
+        m2 = texture(uInput, vTexCoord + vec2(-t.x,t.y)).r; 
     } else if(ang<112.5) { 
-        m1 = texture(uSobel, vTexCoord + vec2(0,-t.y)).r;
-        m2 = texture(uSobel, vTexCoord + vec2(0,t.y)).r; 
+        m1 = texture(uInput, vTexCoord + vec2(0,-t.y)).r;
+        m2 = texture(uInput, vTexCoord + vec2(0,t.y)).r; 
     } else {
-        m1 = texture(uSobel, vTexCoord + vec2(-t.x,-t.y)).r;
-        m2 = texture(uSobel, vTexCoord + vec2(t.x,t.y)).r; 
+        m1 = texture(uInput, vTexCoord + vec2(-t.x,-t.y)).r;
+        m2 = texture(uInput, vTexCoord + vec2(t.x,t.y)).r; 
     } 
 
 
