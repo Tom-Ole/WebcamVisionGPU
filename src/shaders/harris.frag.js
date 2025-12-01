@@ -25,7 +25,7 @@ void main(){
     
     float R = d - k * (tr * tr);
 
-    float R_vis = clamp(R * 1e7, 0.0, 1.0);
+    float R_vis = clamp(R * 1e4, 0.0, 1.0);
     fragColor = vec4(R_vis, R_vis, R_vis, 1.0);
 
     //fragColor = vec4(R, R, R, 1.0); 
@@ -46,12 +46,30 @@ void main(){
    
     vec4 c = texture(uSampler ,vTexCoord); // vec4(mag, ang, sx, sy)
 
-    float offset = 0.1;
-    float Ix = c.b * 2.0 * offset - offset;
-    float Iy = c.a * 2.0 * offset - offset;
+    float Ix = c.b;
+    float Iy = c.a;
 
     fragColor = vec4(Ix * Ix, Ix * Iy, Iy * Iy, 1.0);
 
+}
+`;
 
+export const fsOverlay = `#version 300 es
+precision mediump float;
+
+in vec2 vTexCoord;
+
+uniform sampler2D uVideo;
+uniform sampler2D uOverlay;
+
+out vec4 fragColor;
+
+void main() {
+    vec2 uv = vec2(vTexCoord.x, 1.0 - vTexCoord.y);
+
+    vec4 videoColor = texture(uVideo, uv);
+    float overlayColor = texture(uOverlay, uv).r;
+
+    fragColor = vec4( mix(videoColor.rgb, vec3(1.0, 0.0, 0.0), overlayColor), 1.0 );
 }
 `;

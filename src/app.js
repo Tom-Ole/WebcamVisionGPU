@@ -24,7 +24,12 @@ export async function run({ canvasId = 'canvas', width = 1240, height = 720 }) {
 
     const ext = gl.getExtension('EXT_color_buffer_float');
     if (!ext) {
-    console.error('EXT_color_buffer_float is not supported');
+        console.error('EXT_color_buffer_float is not supported');
+    }
+
+    const ext2 = gl.getExtension('OES_texture_float_linear');
+    if (!ext2) {
+        console.error('OES_texture_float_linear is not supported');
     }
 
     gl.viewport(0, 0, width, height);

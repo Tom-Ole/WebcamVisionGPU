@@ -22,13 +22,9 @@ void main(){
     float mag = length(vec2(sx,sy));
     float ang = degrees(atan(sy,sx));
 
-    const float offset = 0.1; 
-
-    float sx_norm = (sx + offset) / (2.0 * offset);
-    float sy_norm = (sy + offset) / (2.0 * offset);
 
     float ang_norm = ang + 180.0 / 360.0;
 
-    fragColor = vec4(mag, ang_norm, sx_norm, sy_norm); 
+    fragColor = vec4(mag, ang_norm, sx, sy); 
 }
 `;

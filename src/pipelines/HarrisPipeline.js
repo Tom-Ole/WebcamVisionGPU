@@ -4,7 +4,7 @@ import { GPUPass } from '../core/GPUPass.js';
 import { fsBlur, fsTensorBlur } from '../shaders/blur.frag.js';
 import { fsNMS } from '../shaders/nms.frag.js';
 import { fsFinal } from '../shaders/final.frag.js';
-import { fsHarris, fsStructureTensor } from '../shaders/harris.frag.js';
+import { fsHarris, fsOverlay, fsStructureTensor } from '../shaders/harris.frag.js';
 import { fsSobel } from '../shaders/sobel.frag.js';
 
 export class HarrisPipeline extends Pipeline {
@@ -44,7 +44,7 @@ export class HarrisPipeline extends Pipeline {
         // Intermediate Textures & FBOs
         this.blurTex = createTexture(gl, w, h);
         this.blurFB = createFramebuffer(gl, this.blurTex);
-        this.tensorBlurTex = createTexture(gl, w, h);
+        this.tensorBlurTex = createTexture(gl, w, h, gl.RGBA32F, gl.RGBA, gl.FLOAT);
         this.tensorBlurFB = createFramebuffer(gl, this.tensorBlurTex);
         this.sobelTex = createTexture(gl, w, h, gl.RGBA32F, gl.RGBA, gl.FLOAT);
         this.sobelFB = createFramebuffer(gl, this.sobelTex);
@@ -65,7 +65,7 @@ export class HarrisPipeline extends Pipeline {
         this.passStructureTensor = new GPUPass(gl, fsStructureTensor);
         this.passHarris = new GPUPass(gl, fsHarris);
         this.passNMS = new GPUPass(gl, fsNMS);
-        this.passFinal = new GPUPass(gl, fsFinal);
+        this.passFinal = new GPUPass(gl, fsOverlay);
     }
 
     // Bind Video stream frame to video texture buffer
@@ -157,9 +157,15 @@ export class HarrisPipeline extends Pipeline {
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         this.passFinal.bindQuad(this.posBuf, this.texBuf);
         this.passFinal.use();
+        
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.nmsTex);
-        gl.uniform1i(this.passFinal.getUniform('uInput'), 0);
+        gl.uniform1i(this.passFinal.getUniform('uOverlay'), 0);
+        
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, this.videoTex);
+        gl.uniform1i(this.passFinal.getUniform('uVideo'), 1);
+
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
 }
