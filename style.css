@@ -37,9 +37,9 @@ body {
 
 /* Left column: controls */
 .controls {
-    width: 320px;
+    width: 160px;
     max-width: 34%;
-    min-width: 260px;
+    min-width: 180px;
     background: var(--panel);
     backdrop-filter: blur(8px);
     border-radius: var(--radius);
@@ -51,6 +51,7 @@ body {
 
 .header {
     display: flex;
+    flex-direction: column;
     align-items: center;
     gap: 10px;
     margin-bottom: 10px
@@ -70,9 +71,9 @@ body {
 
 .mode-row {
     display: flex;
+    flex-direction: column;
     gap: 8px;
     margin-bottom: 12px;
-    flex-wrap: wrap;
 }
 
 .mode-row button {
@@ -83,18 +84,22 @@ body {
     background: transparent;
     color: var(--muted);
     cursor: pointer;
-    font-weight: 600
+    font-weight: 600;
 }
 
 .mode-row button.active {
     background: linear-gradient(90deg, rgba(96, 165, 250, 0.12), rgba(96, 165, 250, 0.06));
     border-color: rgba(96, 165, 250, 0.14);
-    color: var(--accent)
+    color: var(--accent);
 }
 
+.settingsHeader {
+    font-size: 16px;
+    margin: 0
+}
 
 .settings {
-    margin-top: 8px
+    margin-top: 8px;
 }
 
 .control-group {
@@ -111,13 +116,13 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 13px
+    font-size: 13px;
 }
 
 .range-wrap {
     display: flex;
     align-items: center;
-    gap: 12px
+    gap: 12px;
 }
 
 .range-wrap input[type=range] {
