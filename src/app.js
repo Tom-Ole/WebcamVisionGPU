@@ -112,10 +112,42 @@ export async function run({ canvasId = 'canvas', width = 1240, height = 720 }) {
     document.getElementById('rawBtn').addEventListener('click', () => setMode('raw'));
 
 
+    // Open Seperate Window for capture (OBS).
+    let outputWin = null;
+    let outputCanvas = null;
+    let outputCtx = null;
+
+
+    document.getElementById("openCanvasBtn").addEventListener("click", () => {
+        outputWin = window.open("", "output", "width=1280,height=720");
+
+        outputWin.document.write(`
+        <html>
+        <head>
+            <style>
+                body { margin:0; overflow:hidden; background:black; }
+            </style>
+        </head>
+        <body>
+            <canvas id="out" width="${width}" height="${height}"></canvas>
+        </body>
+        </html>
+        `);
+
+        outputCanvas = outputWin.document.getElementById("out");
+        outputCtx = outputCanvas.getContext("2d");
+    })
+
+
     function loop() {
         if (video.readyState >= 2) {
             activePipeline.updateVideoTexture(video);
             activePipeline.render();
+
+            if (outputCtx) {
+                outputCtx.drawImage(canvas, 0, 0);
+            }
+
         }
         raf = requestAnimationFrame(loop);
     }
