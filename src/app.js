@@ -119,7 +119,7 @@ export async function run({ canvasId = 'canvas', width = 1240, height = 720 }) {
 
 
     document.getElementById("openCanvasBtn").addEventListener("click", () => {
-        outputWin = window.open("", "output", `width=${width},height=${width}`);
+        outputWin = window.open("", "output", `width=${width},height=${height}`);
 
         outputWin.document.write(`
         <html>
